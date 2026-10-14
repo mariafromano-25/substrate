@@ -70,9 +70,19 @@ spec:
         virtiofsd:
           url: "${BUCKET_SCHEME}://${ASSET_BUCKET_NAME}/kata-assets/virtiofsd"
           sha256: "15b2e72a78cc08a9bd8a6943e89fb69c88cb3cbeb63069efceade835342ac7d4"
+        # BENCHMARK ONLY (zram-feature): the zram guest, read from a private GCS
+        # bucket through the node's object-store plugin and pinned by sha256.
+        # vmlinux: kata 4.1.0 (Linux 6.18.35) plus a fragment that builds in
+        # CONFIG_ZRAM (lz4 and zstd backends, lz4 default) and turns PSI on by
+        # default. rootfs.img: the stock kata 4.1.0 image, with
+        # /usr/bin/kata-agent replaced by an init script that sets up
+        # /dev/zram0 (lz4, disksize = 100% of guest RAM, pool capped at 50%,
+        # swappiness 150, page-cluster 0) and then execs the real agent
+        # (/usr/bin/kata-agent.real). Same partition layout and block size as
+        # the stock image, as the virtio-pmem DAX boot requires.
         kata-kernel:
           url: "${BUCKET_SCHEME}://${ASSET_BUCKET_NAME}/kata-assets/vmlinux"
-          sha256: "8e9dbc3a6e4c26adb089d23d31201edebce905c7f3e31aa67b32bdd41df1b86f"
+          sha256: "1b72320fd8cb9b43aa9859deaabcee6dcd1d21baff8360b5280a38558131b13f"
         kata-image:
           url: "${BUCKET_SCHEME}://${ASSET_BUCKET_NAME}/kata-assets/rootfs.img"
-          sha256: "96497f64da1de9c7473fef46c3d29ddd0805d334731cf9d903a21a5b2c33cefb"
+          sha256: "2633dd575a9293e07414b129ee47ade1461428ff8fbfee3e31941dff1f304120"

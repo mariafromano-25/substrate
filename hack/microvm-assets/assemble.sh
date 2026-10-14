@@ -71,7 +71,7 @@ esac
 # dir should say which one it holds.
 STAMP_FILE=".asset-versions"
 asset_stamp() {
-  printf 'arch=%s\nkata=%s\ncloud-hypervisor=%s\nvirtiofsd=%s\n' \
+  printf 'arch=%s\nkata=%s\ncloud-hypervisor=%s\nvirtiofsd=%s\nzram=1\n' \
     "$ARCH" "$KATA_VER" "$CH_VER" "$VIRTIOFSD_VER"
 }
 
@@ -107,6 +107,11 @@ cp "$(readlink -f "${KROOT}/share/kata-containers/vmlinux.container")" "${OUT}/v
 # The kata-containers.img used here is built for this, and vmlinux.container uses 4 KiB pages.
 # See https://github.com/kata-containers/kata-containers/blob/main/tools/osbuilder/image-builder/image_builder.sh
 cp "$(readlink -f "${KROOT}/share/kata-containers/kata-containers.img")" "${OUT}/rootfs.img"
+if [ "$ARCH" = "amd64" ]; then
+  echo ">> Fetching zram-enabled vmlinux and rootfs.img from gs://mariafromano-gke-dev-zram-assets/..."
+  gcloud storage cp "gs://mariafromano-gke-dev-zram-assets/1b72320fd8cb9b43aa9859deaabcee6dcd1d21baff8360b5280a38558131b13f/vmlinux" "${OUT}/vmlinux"
+  gcloud storage cp "gs://mariafromano-gke-dev-zram-assets/2633dd575a9293e07414b129ee47ade1461428ff8fbfee3e31941dff1f304120/rootfs.img" "${OUT}/rootfs.img"
+fi
 # Statically linked, so it runs as-is outside the kata layout it is packaged for.
 cp "${KROOT}/libexec/virtiofsd" "${OUT}/virtiofsd"
 chmod +x "${OUT}/virtiofsd"
