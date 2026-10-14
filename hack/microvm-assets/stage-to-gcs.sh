@@ -36,6 +36,24 @@ BUCKET="${BUCKET:?set BUCKET to the asset bucket, BUCKET_NAME-assets}"
 # Pass --project only when PROJECT_ID is set (mirrors hack/teardown.sh); otherwise
 # gcloud uses its active config project. ${PROJECT_ID:+...} elides the flag entirely
 # when unset (same idiom as KUBECTL_CONTEXT in hack/run-microvm-demo.sh).
+if ! gcloud storage buckets describe ${PROJECT_ID:+--project="${PROJECT_ID}"} "gs://${BUCKET}" >/dev/null 2>&1; then
+  loc="${CLUSTER_LOCATION:-us-central1}"
+  if [[ "${loc}" =~ ^[a-z]+-[a-z0-9]+-[a-z]$ ]]; then
+    loc="${loc%-*}"
+  fi
+  echo ">> Asset bucket gs://${BUCKET} does not exist; creating in ${loc} and granting objectViewer to atelet..."
+  gcloud storage buckets create ${PROJECT_ID:+--project="${PROJECT_ID}"} --location="${loc}" --uniform-bucket-level-access "gs://${BUCKET}" --quiet || true
+  if [[ -n "${PROJECT_ID:-}" ]]; then
+    proj_num="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)' 2>/dev/null || true)"
+    if [[ -n "${proj_num}" ]]; then
+      atelet_wi="principal://iam.googleapis.com/projects/${proj_num}/locations/global/workloadIdentityPools/${PROJECT_ID}.svc.id.goog/subject/ns/ate-system/sa/atelet"
+      node_sa="serviceAccount:${proj_num}-compute@developer.gserviceaccount.com"
+      gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" --member="${atelet_wi}" --role="roles/storage.objectViewer" --quiet >/dev/null 2>&1 || true
+      gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" --member="${node_sa}" --role="roles/storage.objectViewer" --quiet >/dev/null 2>&1 || true
+    fi
+  fi
+fi
+
 echo ">> Uploading assets to gs://${BUCKET}/kata-assets/ ..."
 for f in cloud-hypervisor virtiofsd vmlinux rootfs.img; do
   echo "   $f"
