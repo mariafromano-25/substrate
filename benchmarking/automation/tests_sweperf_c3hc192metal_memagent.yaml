@@ -1,0 +1,56 @@
+# SWE-perf astropy-7336 on c3-highcpu-192-metal, microVM on the stock guest
+# with Kata mem-agent enabled. Runs on
+# gke-substrate-kubetest2-sweperf-c3hc192metal-memagent, built from
+# github.com/mariafromano-25/substrate mem-agent-stock.
+# Each test sets actorMemory: the branch's sweperf template honors it, and
+# workloads/deploy.sh would otherwise default it to 256Mi.
+tests:
+  # Same load as main's sweperf_150u_c3hc192metal_microvm. 2176Mi gives the
+  # 2048 MiB guest that main gets with no limit (guest = limit - 128 MiB).
+  - name: sweperf_150u_c3hc192metal_memagent_microvm
+    type: locust
+    description: "SWE-perf astropy-7336: 150 users, 12-24s think time, 10 minutes, c3-highcpu-192-metal (microVM, stock guest + mem-agent, 2176Mi actors)"
+    targetCluster: dev
+    sandboxClass: microvm
+    file: /app/tests/sweperf.py
+    duration: 10m
+    users: 150
+    workerCount: 3
+    actorMemory: "2176Mi"
+    ateArgs:
+      - "--cordon-system-infra-components"
+    flags:
+      - "--sweperf-template"
+      - "sweperf-astropy-7336"
+      - "--min-wait-time"
+      - "12.0"
+      - "--max-wait-time"
+      - "24.0"
+      - "--spawn-rate"
+      - "15"
+      - "--trace-probability"
+      - "0.05"
+  # The smallest actor Substrate admits (a 128 MiB guest).
+  - name: sweperf_150u_c3hc192metal_memagent_256mi_microvm
+    type: locust
+    description: "SWE-perf astropy-7336: 150 users, 12-24s think time, 10 minutes, c3-highcpu-192-metal (microVM, stock guest + mem-agent, 256Mi actors)"
+    targetCluster: dev
+    sandboxClass: microvm
+    file: /app/tests/sweperf.py
+    duration: 10m
+    users: 150
+    workerCount: 3
+    actorMemory: "256Mi"
+    ateArgs:
+      - "--cordon-system-infra-components"
+    flags:
+      - "--sweperf-template"
+      - "sweperf-astropy-7336"
+      - "--min-wait-time"
+      - "12.0"
+      - "--max-wait-time"
+      - "24.0"
+      - "--spawn-rate"
+      - "15"
+      - "--trace-probability"
+      - "0.05"
