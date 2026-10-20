@@ -64,11 +64,12 @@ import (
 )
 
 var (
-	podUID        = pflag.String("pod-uid", "", "The UID of the current pod")
-	podIPs        = pflag.String("pod-ips", "", "The comma-separated IPs of the current pod")
-	chBinary      = pflag.String("cloud-hypervisor-binary", "cloud-hypervisor", "Path to the cloud-hypervisor binary (used to relaunch on restore).")
-	guestDebug    = pflag.Bool("guest-debug", false, "enable guest debugging (agent debug logs, debug console, and early serial console)")
-	vmmMemReserve = pflag.Int("vmm-mem-reserve-mib", vmmMemReserveMiB, "Guest RAM (MiB) held back from the pod's memory limit for the cloud-hypervisor VMM + virtiofsd, which run as host processes in the pod cgroup alongside the guest RAM. Prevents the pod OOMing when the VM is sized to the pod's memory limit.")
+	podUID         = pflag.String("pod-uid", "", "The UID of the current pod")
+	podIPs         = pflag.String("pod-ips", "", "The comma-separated IPs of the current pod")
+	chBinary       = pflag.String("cloud-hypervisor-binary", "cloud-hypervisor", "Path to the cloud-hypervisor binary (used to relaunch on restore).")
+	guestDebug     = pflag.Bool("guest-debug", false, "enable guest debugging (agent debug logs, debug console, and early serial console)")
+	enableMemAgent = pflag.Bool("enable-mem-agent", true, "enable the in-guest Kata memory agent (MGLRU aging, page-cache/zram eviction, and compaction)")
+	vmmMemReserve  = pflag.Int("vmm-mem-reserve-mib", vmmMemReserveMiB, "Guest RAM (MiB) held back from the pod's memory limit for the cloud-hypervisor VMM + virtiofsd, which run as host processes in the pod cgroup alongside the guest RAM. Prevents the pod OOMing when the VM is sized to the pod's memory limit.")
 	showVersion   = pflag.Bool("version", false, "Print version and exit.")
 	logLevelFlag  = pflag.String("log-level", "info", "Minimum log level: debug, info, warn, or error.")
 	previewFlags  = pflag.StringSlice("preview", nil, "Preview gates to enable.")
@@ -234,6 +235,7 @@ func do(ctx context.Context) error {
 		return err
 	}
 	ateworkerService := NewService(*podUID, *chBinary, *guestDebug, *vmmMemReserve, *maxActors, tunnel, actorLogger)
+	ateworkerService.enableMemAgent = *enableMemAgent
 	// The controller sets both from the downward API.
 	pool := workerstats.Pool{Namespace: os.Getenv("POD_NAMESPACE"), Name: os.Getenv("WORKER_POOL_NAME")}
 	if pool.Namespace == "" || pool.Name == "" {
@@ -368,9 +370,10 @@ type AteWorkerService struct {
 	// before registering.
 	epoch register.Epoch
 
-	podUID     string
-	chBinary   string
-	guestDebug bool
+	podUID         string
+	chBinary       string
+	guestDebug     bool
+	enableMemAgent bool
 
 	// memReserveMiB is guest RAM (MiB) held back from the pod's memory limit for
 	// the cloud-hypervisor VMM + virtiofsd (host processes sharing the pod cgroup
