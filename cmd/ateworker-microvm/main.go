@@ -66,13 +66,14 @@ import (
 )
 
 var (
-	podUID       = pflag.String("pod-uid", "", "The UID of the current pod")
-	podIPs       = pflag.String("pod-ips", "", "The comma-separated IPs of the current pod")
-	chBinary     = pflag.String("cloud-hypervisor-binary", "cloud-hypervisor", "Path to the cloud-hypervisor binary (used to relaunch on restore).")
-	guestDebug   = pflag.Bool("guest-debug", false, "enable guest debugging (agent debug logs, debug console, and early serial console)")
-	showVersion  = pflag.Bool("version", false, "Print version and exit.")
-	logLevelFlag = pflag.String("log-level", "info", "Minimum log level: debug, info, warn, or error.")
-	previewFlags = pflag.StringSlice("preview", nil, "Preview gates to enable.")
+	podUID         = pflag.String("pod-uid", "", "The UID of the current pod")
+	podIPs         = pflag.String("pod-ips", "", "The comma-separated IPs of the current pod")
+	chBinary       = pflag.String("cloud-hypervisor-binary", "cloud-hypervisor", "Path to the cloud-hypervisor binary (used to relaunch on restore).")
+	guestDebug     = pflag.Bool("guest-debug", false, "enable guest debugging (agent debug logs, debug console, and early serial console)")
+	enableMemAgent = pflag.Bool("enable-mem-agent", true, "enable the in-guest Kata memory agent (MGLRU aging, page-cache/zram eviction, and compaction)")
+	showVersion    = pflag.Bool("version", false, "Print version and exit.")
+	logLevelFlag   = pflag.String("log-level", "info", "Minimum log level: debug, info, warn, or error.")
+	previewFlags   = pflag.StringSlice("preview", nil, "Preview gates to enable.")
 
 	otlpRelaySocket = pflag.String("otlp-relay-socket", nodepath.AteletOTLPSocketPath(),
 		"Unix socket of atelet's OTLP relay to export telemetry through, keeping it off the pod network. Empty, or absent at startup, exports directly to OTEL_EXPORTER_OTLP_ENDPOINT instead.")
@@ -239,6 +240,7 @@ func do(ctx context.Context) error {
 		return err
 	}
 	ateworkerService := NewService(*podUID, *chBinary, *guestDebug, *maxActors, tunnel, actorLogger, bootID)
+	ateworkerService.enableMemAgent = *enableMemAgent
 	ateworkerService.throttleMemory = cgroup.PSIEnabled(cgroup.Root)
 	if !ateworkerService.throttleMemory {
 		slog.WarnContext(ctx, "Kernel has no cgroup memory pressure (PSI), so actor cgroups get no memory limit and an actor over its booking can restart the worker")
@@ -385,9 +387,10 @@ type AteWorkerService struct {
 	// before registering.
 	epoch register.Epoch
 
-	podUID     string
-	chBinary   string
-	guestDebug bool
+	podUID         string
+	chBinary       string
+	guestDebug     bool
+	enableMemAgent bool
 
 	// snapshotWrites holds a slot per CH snapshot write in flight, whose page
 	// cache memoryReservedBytes budgets for.
