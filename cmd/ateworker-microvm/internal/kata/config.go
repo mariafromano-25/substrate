@@ -26,6 +26,12 @@ func WithAgentDebug(kernelParams string) string {
 	return appendKernelParams(kernelParams, "agent.log=", "agent.log=debug agent.debug_console agent.debug_console_vport=1026")
 }
 
+// WithMemAgent enables PSI (psi=1) and the in-guest Kata memory agent (MGLRU
+// aging, page-cache/zram eviction, and memory compaction).
+func WithMemAgent(kernelParams string) string {
+	return appendKernelParams(kernelParams, "agent.mem_agent_enable=", "psi=1 agent.mem_agent_enable=true agent.mem_agent_memcg_swap=true agent.mem_agent_memcg_swappiness_max=150 agent.mem_agent_memcg_period_secs=10 agent.mem_agent_memcg_eviction_run_aging_count_min=1 agent.mem_agent_memcg_period_psi_percent_limit=10 agent.mem_agent_memcg_eviction_psi_percent_limit=5 agent.mem_agent_compact_period_secs=30 agent.mem_agent_compact_order=9 agent.mem_agent_compact_threshold=128 agent.mem_agent_compact_force_times=3")
+}
+
 // appendKernelParams appends add to a kernel_params string unless marker is
 // already present (so repeated calls are no-ops).
 func appendKernelParams(kernelParams, marker, add string) string {
