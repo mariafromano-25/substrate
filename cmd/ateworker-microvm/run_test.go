@@ -237,6 +237,35 @@ func TestKernelParamsDebugConsole(t *testing.T) {
 	}
 }
 
+func TestKernelParamsMemAgent(t *testing.T) {
+	defaultParams := (&AteWorkerService{enableMemAgent: false}).kernelParams()
+	for _, forbidden := range []string{"psi=1", "agent.mem_agent_enable=true"} {
+		if strings.Contains(defaultParams, forbidden) {
+			t.Errorf("expected kernelParams() with enableMemAgent=false not to contain %q, but got %q", forbidden, defaultParams)
+		}
+	}
+
+	memAgentParams := (&AteWorkerService{enableMemAgent: true}).kernelParams()
+	for _, want := range []string{
+		"psi=1",
+		"agent.mem_agent_enable=true",
+		"agent.mem_agent_memcg_swap=true",
+		"agent.mem_agent_memcg_swappiness_max=150",
+		"agent.mem_agent_memcg_period_secs=10",
+		"agent.mem_agent_memcg_eviction_run_aging_count_min=1",
+		"agent.mem_agent_memcg_period_psi_percent_limit=10",
+		"agent.mem_agent_memcg_eviction_psi_percent_limit=5",
+		"agent.mem_agent_compact_period_secs=30",
+		"agent.mem_agent_compact_order=9",
+		"agent.mem_agent_compact_threshold=128",
+		"agent.mem_agent_compact_force_times=3",
+	} {
+		if !strings.Contains(memAgentParams, want) {
+			t.Errorf("expected kernelParams() with enableMemAgent=true to contain %q, but got %q", want, memAgentParams)
+		}
+	}
+}
+
 func TestBuildVMConfigBalloon(t *testing.T) {
 	cfg := buildVMConfig("actor-1", "/vmlinux", "/rootfs.img", "", "/console.log", 256, 1, true, false)
 	if cfg.Balloon == nil || !cfg.Balloon.FreePageReporting || cfg.Balloon.Size != 0 {
