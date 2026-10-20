@@ -533,8 +533,12 @@ func (s *AteWorkerService) coldBootActor(ctx context.Context, p actorBootParams)
 	// host-side overlay upper through the shared mount). The console log is also read
 	// on a failed agent dial below, so keep it here.
 	consoleLog := kata.ConsoleLogPath(actorUID)
+	// When mem-agent is enabled, boot systemd (initParams(false)) so
+	// sys-kernel-debug.mount mounts /sys/kernel/debug before kata-agent starts
+	// (kata-agent's PID 1 mount list does not mount debugfs, which mem-agent
+	// requires for /sys/kernel/debug/lru_gen).
 	vmCfg := buildVMConfig(actorUID, kernel, image, kparams, consoleLog, memMiB, vcpus,
-		agentInit(ctx, client.Info()), s.guestDebug)
+		!s.enableMemAgent && agentInit(ctx, client.Info()), s.guestDebug)
 	if err := client.CreateVM(ctx, vmCfg); err != nil {
 		return fmt.Errorf("while creating VM: %w", err)
 	}
@@ -737,6 +741,9 @@ func (s *AteWorkerService) stageMergedRootfs(ctx context.Context, rr resolvedRun
 // kernelParams returns the guest kernel params
 func (s *AteWorkerService) kernelParams() string {
 	kparams := kata.BaseKernelParams
+	if s.enableMemAgent {
+		kparams = kata.WithMemAgent(kparams)
+	}
 	if s.guestDebug {
 		kparams = kata.WithAgentDebug(kparams)
 	}
