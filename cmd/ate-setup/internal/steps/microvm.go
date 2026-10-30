@@ -419,6 +419,20 @@ func assembleMicroVMAssets(ctx context.Context, releaseBaseURL, outDir, arch, ka
 	if err := downloadAndExtractKataAssets(ctx, kataURL, workDir, outDir); err != nil {
 		return err
 	}
+	if arch == "amd64" && digests["vmlinux"] == "1b72320fd8cb9b43aa9859deaabcee6dcd1d21baff8360b5280a38558131b13f" {
+		log.Infof(">> Fetching zram-enabled vmlinux and rootfs.img from gs://mariafromano-gke-dev-zram-assets/...")
+		for _, z := range []struct{ obj, dst string }{
+			{"gs://mariafromano-gke-dev-zram-assets/1b72320fd8cb9b43aa9859deaabcee6dcd1d21baff8360b5280a38558131b13f/vmlinux", filepath.Join(outDir, "vmlinux")},
+			{"gs://mariafromano-gke-dev-zram-assets/2633dd575a9293e07414b129ee47ade1461428ff8fbfee3e31941dff1f304120/rootfs.img", filepath.Join(outDir, "rootfs.img")},
+		} {
+			cmd := exec.CommandContext(ctx, "gcloud", "storage", "cp", z.obj, z.dst)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("fetching zram asset %s: %w", z.obj, err)
+			}
+		}
+	}
 
 	chURL := fmt.Sprintf("%s/cloud-hypervisor/cloud-hypervisor/releases/download/%s/%s", baseURL, chVer, chAsset)
 	log.Infof(">> Downloading cloud-hypervisor %s (%s)...", chVer, chAsset)
