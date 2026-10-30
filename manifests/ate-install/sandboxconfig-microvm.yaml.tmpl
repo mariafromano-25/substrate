@@ -68,9 +68,19 @@ spec:
         virtiofsd:
           url: "${BUCKET_SCHEME}://${ASSET_BUCKET_NAME}/microvm-assets/amd64/15b2e72a78cc08a9bd8a6943e89fb69c88cb3cbeb63069efceade835342ac7d4"
           sha256: "15b2e72a78cc08a9bd8a6943e89fb69c88cb3cbeb63069efceade835342ac7d4"
+        # BENCHMARK ONLY (zram-feature): the zram guest, read from a private GCS
+        # bucket through the node's object-store plugin and pinned by sha256.
+        # vmlinux: kata 4.1.0 (Linux 6.18.35) plus a fragment that builds in
+        # CONFIG_ZRAM (lz4 and zstd backends, lz4 default) and turns PSI on by
+        # default. rootfs.img: the stock kata 4.1.0 image, with
+        # /usr/bin/kata-agent replaced by an init script that sets up
+        # /dev/zram0 (lz4, disksize = 100% of guest RAM, pool capped at 50%,
+        # swappiness 150, page-cluster 0) and then execs the real agent
+        # (/usr/bin/kata-agent.real). Same partition layout and block size as
+        # the stock image, as the virtio-pmem DAX boot requires.
         kata-kernel:
-          url: "${BUCKET_SCHEME}://${ASSET_BUCKET_NAME}/microvm-assets/amd64/f87d8359035cb7557b16a319e6431ea09b183e62268aef436bf8dc6530d786b6"
-          sha256: "f87d8359035cb7557b16a319e6431ea09b183e62268aef436bf8dc6530d786b6"
+          url: "${BUCKET_SCHEME}://${ASSET_BUCKET_NAME}/microvm-assets/amd64/1b72320fd8cb9b43aa9859deaabcee6dcd1d21baff8360b5280a38558131b13f"
+          sha256: "1b72320fd8cb9b43aa9859deaabcee6dcd1d21baff8360b5280a38558131b13f"
         kata-image:
-          url: "${BUCKET_SCHEME}://${ASSET_BUCKET_NAME}/microvm-assets/amd64/6770db2cca5710593f27c9ac5e1d9d7aab836422695a5e5c4807496a92a0f24d"
-          sha256: "6770db2cca5710593f27c9ac5e1d9d7aab836422695a5e5c4807496a92a0f24d"
+          url: "${BUCKET_SCHEME}://${ASSET_BUCKET_NAME}/microvm-assets/amd64/2633dd575a9293e07414b129ee47ade1461428ff8fbfee3e31941dff1f304120"
+          sha256: "2633dd575a9293e07414b129ee47ade1461428ff8fbfee3e31941dff1f304120"
